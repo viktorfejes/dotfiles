@@ -19,3 +19,27 @@ vim.opt.scrolloff = 8
 vim.opt.wrap = false -- line wrapping
 vim.opt.splitright = true         -- Prefer splitting vertical windows to the right
 vim.opt.splitbelow = true         -- Prefer splitting horizontal windows below
+
+vim.o.updatetime = 100
+vim.opt.clipboard = 'unnamedplus' -- Use system clipboard
+
+vim.filetype.add({
+    extension = {
+        hlsl = "hlsl",
+        fx = "hlsl",
+        shader = "hlsl",
+    },
+})
+
+-- Typo annoyance prevention
+vim.cmd('cnoreabbrev W w')
+vim.cmd('cnoreabbrev Q q')
+
+-- Line wrap for some file types
+vim.api.nvim_create_augroup("WrapSpecificFiletypes", { clear = true })
+
+vim.api.nvim_create_autocmd("FileType", {
+    group = "WrapSpecificFiletypes",
+    pattern = {"markdown", "text"},
+    command = "setlocal wrap",
+})

@@ -34,7 +34,7 @@ return {
                     -- configure clangd language server
                     lspconfig["clangd"].setup({
                         capabilities = capabilities,
-                        filetypes = { "c", "cpp", "objc", "objcpp", "cuda" }
+                        filetypes = { "c", "h", "hpp", "cpp", "objc", "objcpp", "cuda" }
                     })
                 end,
                 ["emmet_ls"] = function()
@@ -61,6 +61,27 @@ return {
                         },
                     })
                 end,
+                ["slangd"] = function()
+                    -- configure slangd lsp
+                    lspconfig["slangd"].setup({
+                        capabilities = capabilities,
+                        filetypes = { "hlsl" },
+                        cmd = { vim.fn.has("win32") == 1 and "slangd.exe" or "slangd" },
+                        root_dir = function(fname)
+                            return vim.fs.dirname(vim.fs.find(".git", { path = fname, upward = true})[1])
+                                or vim.fn.getcwd()
+                        end,
+                        settings = {
+                            slang = {
+                                prederinedMacros = { "MY_VALUE_MACRO=1" },
+                                inlayHints = {
+                                    deducedTypes = true,
+                                    parameterNames = true,
+                                }
+                            }
+                        }
+                    })
+                end
             }
         })
 
@@ -96,6 +117,28 @@ return {
         }
 
         vim.diagnostic.config({
+            virtual_text = false,
+            float = {
+                border = "rounded",
+                focusable = false,
+                source = "if_many",
+                header = "",
+                prefix = function(diagnostic)
+                    if diagnostic.severity == vim.diagnostic.severity.ERROR then
+                        return require("vf.icons").diagnostics.ERROR .. " "
+                    elseif diagnostic.severity == vim.diagnostic.severity.WARN then
+                        return require("vf.icons").diagnostics.WARN .. " "
+                    elseif diagnostic.severity == vim.diagnostic.severity.INFO then
+                        return require("vf.icons").diagnostics.INFO .. " "
+                    elseif diagnostic.severity == vim.diagnostic.severity.HINT then
+                        return require("vf.icons").diagnostics.HINT .. " "
+                    end
+                    return ""
+                end,
+            },
+            
+            update_in_insert = false,
+            severity_sort = true,
             -- The 'signs' table controls the appearance of diagnostic markers in the sign column.
             signs = {
                 -- Configures the text (icon) to display for each severity level.
@@ -107,11 +150,11 @@ return {
                     [vim.diagnostic.severity.INFO]  = require("vf.icons").diagnostics.INFO, -- Icon for info
                 },
             },
-            virtual_text = {
-                prefix = function(diagnostics)
-                    return severity_icons[diagnostics.severity] or "?"
-                end,
-            },
+            -- virtual_text = {
+            --     prefix = function(diagnostics)
+            --         return severity_icons[diagnostics.severity] or "?"
+            --     end,
+            -- },
         })
 
         -- Keymap for formatting functions
@@ -121,5 +164,12 @@ return {
         vim.keymap.set("v", "<leader>oo", function()
             vim.lsp.buf.format({async = true})
         end, {})
+
+        -- Hover floating window for diagnostics
+        vim.api.nvim_create_autocmd("CursorHold", {
+            callback = function()
+                vim.diagnostic.open_float(nil, { focus = false, scope = "cursor" })
+            end,
+        })
     end
 }
